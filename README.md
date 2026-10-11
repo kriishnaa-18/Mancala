@@ -8,3 +8,4 @@ A Mancala game you can play against the computer, built with HTML, CSS, and Java
 - Land your last seed in your store to go again.
 - Land it in an empty pit on your side to capture the seeds across from it.
 - The game ends when one side is empty. Most seeds wins.
+
