@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mancala</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#e6efea;--ink:#14302f;--muted:#4d6b69;--board:#17434a;--pit:#0d2d33;--pit-hi:#15434b;--accent:#f0a083;--ring:#efe0b4;--seed:#efe0b4;--onboard:#e8f1ee}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a1a1d;--ink:#e8f1ee;--muted:#8fb0ac;--board:#123940;--pit:#08242a;--pit-hi:#0f3a42}}
+:root[data-theme="dark"]{--bg:#0a1a1d;--ink:#e8f1ee;--muted:#8fb0ac;--board:#123940;--pit:#08242a;--pit-hi:#0f3a42}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+main{max-width:760px;margin:0 auto;padding:20px 14px 32px}
+h1{font-size:clamp(2rem,7vw,3rem);font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 18px;max-width:60ch}
+.status{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;min-height:2.4em}
+.right{display:flex;align-items:center;gap:12px}
+.best{font-weight:600;font-size:.95rem;color:var(--muted);white-space:nowrap}
+.statusleft{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
+.turn{padding:4px 14px;border-radius:999px;font-weight:800;font-size:.9rem;background:var(--muted);color:#fff}
+.turn[data-who="0"]{background:var(--ring);color:#14302f}
+.turn[data-who="1"]{background:var(--accent);color:#14302f}
+#msg{font-weight:600;font-size:1.05rem}
+button.new{font:inherit;font-weight:600;background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:8px 18px;cursor:pointer}
+.board{display:grid;grid-template-columns:1.15fr repeat(6,1fr) 1.15fr;grid-template-rows:auto auto;gap:clamp(4px,1.2vw,10px);padding:clamp(10px,2.5vw,18px);background:var(--board);border-radius:32px;overflow-x:auto}
+.cell{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border-radius:20px;min-width:0;transition:background .2s}
+.cell.bot.active{background:rgba(239,224,180,.26)}
+.cell.top.active{background:rgba(240,160,131,.28)}
+.pit,.store{position:relative;background:var(--pit);border:0;color:#fff;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 4px 10px rgba(0,0,0,.45)}
+.pit{width:100%;aspect-ratio:1;border-radius:50%;padding:6px;min-width:0}
+.store{grid-row:1/3;border-radius:999px;padding:10px 4px;min-height:200px;transition:box-shadow .2s}
+.store.active{box-shadow:inset 0 4px 10px rgba(0,0,0,.45),0 0 0 3px var(--ring)}
+.store.cpu.active{box-shadow:inset 0 4px 10px rgba(0,0,0,.45),0 0 0 3px var(--accent)}
+.pit.can{cursor:pointer;background:var(--pit-hi);outline:2px solid var(--ring)}
+.pit.can:hover{filter:brightness(1.25)}
+.pit:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.pit.flash,.store.flash{animation:pop .3s}
+@keyframes pop{50%{transform:scale(1.08);filter:brightness(1.5)}}
+@media (prefers-reduced-motion:reduce){.pit.flash,.store.flash{animation:none}}
+.beads{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-content:center;flex:1;max-width:100%}
+.bead{width:clamp(6px,1.7vw,10px);aspect-ratio:1;border-radius:50%;background:var(--seed)}
+.n{font-weight:800;font-size:clamp(.85rem,2.6vw,1.15rem);color:var(--onboard);line-height:1.2}
+.store .n{color:#fff}
+.store .beads{max-width:42px}
+.who{font-size:.72rem;font-weight:600;opacity:.8}
+.help{margin-top:18px;color:var(--muted);font-size:.95rem}
+.help summary{cursor:pointer;color:var(--ink);font-weight:600}
+.help ul{padding-left:1.1rem;margin:8px 0 0;max-width:62ch}
+</style>
+</head>
+<body>
+<main>
+<h1>Mancala</h1>
+<p class="sub">Think you can outsmart the bot? It definitely thinks you can't. Tap a pit on the bottom row and prove it wrong.</p>
+<div class="status"><div class="statusleft"><span class="turn" id="turn"></span><span id="msg" role="status" aria-live="polite"></span></div><div class="right"><span class="best" id="best"></span><button class="new" id="new">New game</button></div></div>
+<div class="board" id="board"></div>
+<details class="help"><summary>How to play</summary>
+<ul>
+<li><strong>Your turf:</strong> The bottom row is yours. Tap a pit and its seeds get dropped one by one, moving right, into your store and then onto the bot's side.</li>
+<li><strong>Hands off the bot's store:</strong> Your seeds skip it. Rude, but those are the rules.</li>
+<li><strong>Free turn:</strong> If your last seed lands in your own store, you go again. The bot hates this.</li>
+<li><strong>Steal mode:</strong> If your last seed lands in an empty pit on your side, you grab everything in the pit across from it, plus your own seed. Villain arc unlocked.</li>
+<li><strong>Game over:</strong> When one side runs dry, the leftover seeds go to whoever owns that side. Most seeds wins, and the bot will not be gracious about it.</li>
+<li><strong>Bragging rights:</strong> Your best score is saved, so beat your own record.</li>
+</ul></details>
+</main>
+<script>
+// Board: 0-5 your pits, 6 your store, 7-12 computer pits, 13 computer store.
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep=ms=>new Promise(r=>setTimeout(r,reduce?Math.min(ms,60):ms));
+let s,busy,over,turn=0; // turn: 0 = you, 1 = computer, -1 = game over
+const boardEl=document.getElementById("board"),msgEl=document.getElementById("msg"),turnEl=document.getElementById("turn");
+const els=[],cells=[],counts=[];
+// Best score is saved in this browser only (localStorage)
+const bestEl=document.getElementById("best");
+let best=0;
+try{best=+localStorage.getItem("mancalaBest")||0;}catch(e){}
+const showBest=()=>{bestEl.textContent=best?`Best: ${best}`:"Best: none yet";};
+
+function build(){
+  boardEl.innerHTML="";
+  for(let i=0;i<14;i++){
+    if(i===6||i===13){
+      const st=document.createElement("div");
+      st.className="store"+(i===13?" cpu":"");
+      st.style.gridColumn=i===13?1:8;st.style.gridRow="1 / 3";
+      els[i]=st;boardEl.appendChild(st);continue;
+    }
+    const mine=i<6;
+    const cell=document.createElement("div");
+    cell.className="cell "+(mine?"bot":"top");
+    cell.style.gridColumn=mine?i+2:14-i;cell.style.gridRow=mine?2:1;
+    const pit=document.createElement("button");pit.className="pit";
+    if(mine)pit.addEventListener("click",()=>humanMove(i));else pit.disabled=true;
+    const n=document.createElement("span");n.className="n";
+    // your number goes below the pit, the computer's goes above it
+    if(mine)cell.append(pit,n);else cell.append(n,pit);
+    els[i]=pit;cells[i]=cell;counts[i]=n;boardEl.appendChild(cell);
+  }
+}
+function render(flash){
+  for(let i=0;i<14;i++){
+    const e=els[i],n=s[i],isStore=i===6||i===13;
+    let beads="";
+    for(let k=0;k<Math.min(n,isStore?30:20);k++)beads+='<span class="bead"></span>';
+    if(isStore){
+      e.innerHTML=`<span class="who">${i===6?"You":"Computer"}</span><div class="beads">${beads}</div><span class="n">${n}</span>`;
+    }else{
+      e.innerHTML=`<div class="beads">${beads}</div>`;
+      counts[i].textContent=n;
+      e.setAttribute("aria-label",`${i<6?"Your":"Computer"} pit with ${n} seeds`);
+      const can=i<6&&!busy&&!over&&n>0;
+      e.classList.toggle("can",can);e.disabled=!can;
+    }
+    // highlight whoever's turn it is
+    (cells[i]||e).classList.toggle("active",i<7?turn===0:turn===1);
+    e.classList.remove("flash");
+    if(i===flash){void e.offsetWidth;e.classList.add("flash");}
+  }
+  turnEl.textContent=turn===0?"Your turn":turn===1?"Computer's turn":"Game over";
+  turnEl.dataset.who=turn;
+}
+const say=t=>msgEl.textContent=t;
+
+// Sowing and capture rules (same as the C version, with one 14-slot array)
+function sow(st,p,pit){
+  let cur=p*7+pit,n=st[cur];st[cur]=0;
+  const skip=p?6:13;
+  while(n>0){cur=(cur+1)%14;if(cur===skip)continue;st[cur]++;n--;}
+  return cur;
+}
+function finish(st,p,last){
+  const store=p*7+6;let cap=0;
+  if(last>=p*7&&last<p*7+6&&st[last]===1&&st[12-last]>0){
+    cap=st[12-last]+1;st[store]+=cap;st[last]=0;st[12-last]=0;
+  }
+  return {extra:last===store,cap};
+}
+const side=(st,p)=>st.slice(p*7,p*7+6).reduce((a,b)=>a+b,0);
+
+// Computer strategy: greedy store gain, plus the best follow-up on an extra turn,
+// and avoid ending the game while behind.
+function chooseMove(){
+  let best=-1,bestGain=-Infinity;
+  for(let pit=0;pit<6;pit++){
+    if(s[7+pit]===0)continue;
+    const t=s.slice(),before=t[13];
+    const r=finish(t,1,sow(t,1,pit));
+    let gain=t[13]-before;
+    if(side(t,0)===0&&t[13]<s[6])gain-=100;
+    if(r.extra){
+      let second=0;
+      for(let j=0;j<6;j++){
+        if(t[7+j]===0)continue;
+        const u=t.slice(),b=u[13];
+        finish(u,1,sow(u,1,j));
+        second=Math.max(second,u[13]-b);
+      }
+      gain+=second;
+    }
+    if(gain>bestGain){bestGain=gain;best=pit;}
+  }
+  return best;
+}
+
+async function play(p,pit){
+  busy=true;turn=p;
+  const start=p*7+pit,skip=p?6:13;
+  let n=s[start],cur=start;s[start]=0;render();
+  while(n>0){
+    cur=(cur+1)%14;if(cur===skip)continue;
+    s[cur]++;n--;render(cur);await sleep(240);
+  }
+  const r=finish(s,p,cur);
+  if(r.cap){render(p*7+6);say(`${p?"Computer":"You"} captured ${r.cap} seeds!`);await sleep(700);}
+  if(side(s,0)===0||side(s,1)===0){return endGame();}
+  if(r.extra){
+    if(p){say("Computer goes again.");render();await sleep(700);return play(1,chooseMove());}
+    busy=false;say("Your last seed landed in your store. Go again!");render();return;
+  }
+  if(p===0){turn=1;say("Computer is thinking...");render();await sleep(600);return play(1,chooseMove());}
+  turn=0;busy=false;say("Your move.");render();
+}
+function humanMove(pit){if(!busy&&!over&&s[pit]>0)play(0,pit);}
+function endGame(){
+  for(const p of [0,1]){s[p*7+6]+=side(s,p);for(let i=0;i<6;i++)s[p*7+i]=0;}
+  over=true;busy=false;turn=-1;render();
+  const a=s[6],b=s[13],prev=best;
+  if(a>prev){best=a;try{localStorage.setItem("mancalaBest",best);}catch(e){}showBest();}
+  const note=a>prev&&prev>0?" New best score!":"";
+  say((a>b?`You win, ${a} to ${b}!`:a<b?`Computer wins, ${b} to ${a}.`:`It's a tie at ${a}.`)+note);
+}
+function newGame(){s=[5,5,5,5,5,5,0,5,5,5,5,5,5,0];busy=false;over=false;turn=0;render();say("Your move.");}
+document.getElementById("new").addEventListener("click",newGame);
+showBest();build();newGame();
+</script>
+</body>
+</html>
