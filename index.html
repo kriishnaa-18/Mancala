@@ -1,202 +1,521 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mancala</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
 <style>
-:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---bg:#e6efea;--ink:#14302f;--muted:#4d6b69;--board:#17434a;--pit:#0d2d33;--pit-hi:#15434b;--accent:#f0a083;--ring:#efe0b4;--seed:#efe0b4;--onboard:#e8f1ee}
-html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a1a1d;--ink:#e8f1ee;--muted:#8fb0ac;--board:#123940;--pit:#08242a;--pit-hi:#0f3a42}}
-:root[data-theme="dark"]{--bg:#0a1a1d;--ink:#e8f1ee;--muted:#8fb0ac;--board:#123940;--pit:#08242a;--pit-hi:#0f3a42}
-*,*::before,*::after{box-sizing:inherit}
-body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
-main{max-width:760px;margin:0 auto;padding:20px 14px 32px}
-h1{font-size:clamp(2rem,7vw,3rem);font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
-.sub{color:var(--muted);margin:0 0 18px;max-width:60ch}
-.status{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;min-height:2.4em}
-.right{display:flex;align-items:center;gap:12px}
-.best{font-weight:600;font-size:.95rem;color:var(--muted);white-space:nowrap}
-.statusleft{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px}
-.turn{padding:4px 14px;border-radius:999px;font-weight:800;font-size:.9rem;background:var(--muted);color:#fff}
-.turn[data-who="0"]{background:var(--ring);color:#14302f}
-.turn[data-who="1"]{background:var(--accent);color:#14302f}
-#msg{font-weight:600;font-size:1.05rem}
-button.new{font:inherit;font-weight:600;background:var(--ink);color:var(--bg);border:0;border-radius:999px;padding:8px 18px;cursor:pointer}
-.board{display:grid;grid-template-columns:1.15fr repeat(6,1fr) 1.15fr;grid-template-rows:auto auto;gap:clamp(4px,1.2vw,10px);padding:clamp(10px,2.5vw,18px);background:var(--board);border-radius:32px;overflow-x:auto}
-.cell{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border-radius:20px;min-width:0;transition:background .2s}
-.cell.bot.active{background:rgba(239,224,180,.26)}
-.cell.top.active{background:rgba(240,160,131,.28)}
-.pit,.store{position:relative;background:var(--pit);border:0;color:#fff;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:inset 0 4px 10px rgba(0,0,0,.45)}
-.pit{width:100%;aspect-ratio:1;border-radius:50%;padding:6px;min-width:0}
-.store{grid-row:1/3;border-radius:999px;padding:10px 4px;min-height:200px;transition:box-shadow .2s}
-.store.active{box-shadow:inset 0 4px 10px rgba(0,0,0,.45),0 0 0 3px var(--ring)}
-.store.cpu.active{box-shadow:inset 0 4px 10px rgba(0,0,0,.45),0 0 0 3px var(--accent)}
-.pit.can{cursor:pointer;background:var(--pit-hi);outline:2px solid var(--ring)}
-.pit.can:hover{filter:brightness(1.25)}
-.pit:focus-visible{outline:3px solid #fff;outline-offset:2px}
-.pit.flash,.store.flash{animation:pop .3s}
-@keyframes pop{50%{transform:scale(1.08);filter:brightness(1.5)}}
-@media (prefers-reduced-motion:reduce){.pit.flash,.store.flash{animation:none}}
-.beads{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-content:center;flex:1;max-width:100%}
-.bead{width:clamp(6px,1.7vw,10px);aspect-ratio:1;border-radius:50%;background:var(--seed)}
-.n{font-weight:800;font-size:clamp(.85rem,2.6vw,1.15rem);color:var(--onboard);line-height:1.2}
-.store .n{color:#fff}
-.store .beads{max-width:42px}
-.who{font-size:.72rem;font-weight:600;opacity:.8}
-.help{margin-top:18px;color:var(--muted);font-size:.95rem}
-.help summary{cursor:pointer;color:var(--ink);font-weight:600}
-.help ul{padding-left:1.1rem;margin:8px 0 0;max-width:62ch}
+/* ================================================================
+   THEME — swap these tokens for your site's brand colors and font.
+   Everything visual (board, pits, seeds, UI) reads from here.
+   ================================================================ */
+:root{
+  --font: "Bricolage Grotesque", ui-rounded, "Segoe UI", system-ui, sans-serif;
+  --bg: #E6EFEA;
+  --ink: #14302F;
+  --ink-soft: #4D6B69;
+  --surface: #F4F9F6;
+  --line: #C6D9D3;
+  --accent: #F0A083;
+  --accent-ink: #14302F;
+  --ring: #EFE0B4;
+  --board: #17434A;
+  --board-edge: #0E2F35;
+  --pit: #0D2D33;
+  --pit-hi: #15434B;
+  --chip-bg: #08242A;
+  --chip-ink: #E8F1EE;
+  /* seed (marble) colors */
+  --seed-1: #F5A595;
+  --seed-2: #F6D27E;
+  --seed-3: #90D8C8;
+  --seed-4: #BDA6EE;
+  --seed-5: #92C0F2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A1A1D; --ink:#E8F1EE; --ink-soft:#8FB0AC; --surface:#10262A; --line:#1E3D42;
+    --board:#123940; --board-edge:#0A282E; --pit:#08242A; --pit-hi:#0F3A42; --chip-bg:#05191D;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A1A1D; --ink:#E8F1EE; --ink-soft:#8FB0AC; --surface:#10262A; --line:#1E3D42;
+  --board:#123940; --board-edge:#0A282E; --pit:#08242A; --pit-hi:#0F3A42; --chip-bg:#05191D;
+}
+/* ================================================================ */
+
+:root{ box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+*,*::before,*::after{ box-sizing:inherit; }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); }
+body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--font); -webkit-font-smoothing:antialiased; }
+button{ font:inherit; color:inherit; }
+
+.wrap{ max-width:760px; margin:0 auto; padding:clamp(16px,4vw,40px) clamp(12px,3vw,28px) 48px; }
+
+header{ display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:clamp(16px,3vw,28px); }
+h1{ margin:0; font-size:clamp(32px,7vw,48px); font-weight:800; letter-spacing:-0.02em; line-height:1; }
+.sub{ margin:8px 0 0; color:var(--ink-soft); max-width:60ch; line-height:1.5; }
+.best{ font-weight:600; font-size:14px; color:var(--ink-soft); white-space:nowrap; }
+.controls{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.seg{ display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; }
+.seg button{ border:0; background:transparent; padding:8px 14px; border-radius:999px; cursor:pointer; font-weight:600; font-size:14px; color:var(--ink-soft); }
+.seg button[aria-pressed="true"]{ background:var(--ink); color:var(--bg); }
+.btn{ border:1px solid var(--line); background:var(--surface); padding:9px 16px; border-radius:999px; cursor:pointer; font-weight:600; font-size:14px; }
+.btn.primary{ background:var(--ink); color:var(--bg); border-color:transparent; }
+.btn:hover,.seg button:hover{ filter:brightness(1.05); }
+:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+
+.side{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 clamp(8px,2vw,20px); font-weight:600; }
+.side .who{ display:flex; align-items:center; gap:10px; color:var(--ink-soft); transition:color .2s; }
+.side .who::before{ content:""; width:10px; height:10px; border-radius:50%; background:var(--line); transition:background .2s, box-shadow .2s; }
+.side.active .who{ color:var(--ink); }
+#side0.active .who::before{ background:var(--ring); box-shadow:0 0 0 4px color-mix(in srgb, var(--ring) 40%, transparent); }
+#side1.active .who::before{ background:var(--accent); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); }
+.side .score{ font-size:clamp(20px,3vw,28px); font-weight:800; font-variant-numeric:tabular-nums; }
+.side.top{ margin-bottom:12px; }
+.side.bottom{ margin-top:12px; }
+
+.stage{ position:relative; }
+.board{
+  position:relative; isolation:isolate;
+  display:grid; grid-template-columns:1.15fr repeat(6,1fr) 1.15fr; grid-template-rows:auto auto;
+  gap:clamp(6px,1.8vw,16px); padding:clamp(14px,3vw,28px) clamp(10px,2.4vw,24px);
+  background:var(--board); border-radius:clamp(22px,5vw,52px);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.14), inset 0 -8px 0 var(--board-edge), 0 24px 50px -24px rgba(0,0,0,.55);
+  user-select:none; -webkit-user-select:none; touch-action:manipulation;
+}
+.pit,.store{
+  position:relative; border:0; padding:0; margin:0;
+  background:radial-gradient(ellipse at 50% 30%, var(--pit-hi), var(--pit) 72%);
+  box-shadow: inset 0 7px 12px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.14);
+}
+.pit{ aspect-ratio:1; border-radius:50%; cursor:default; transition:box-shadow .15s; }
+.store{ border-radius:999px; min-height:100%; }
+.pit:not(:disabled){ cursor:pointer; background:radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--pit-hi) 80%, #fff), var(--pit-hi) 72%); box-shadow: inset 0 7px 12px rgba(0,0,0,.5), 0 0 0 2px color-mix(in srgb, var(--ring) 75%, transparent); }
+.pit:not(:disabled):hover{ box-shadow: inset 0 7px 12px rgba(0,0,0,.5), 0 0 0 3px var(--ring); }
+.pit.target, .store.target{ box-shadow: inset 0 7px 12px rgba(0,0,0,.5), 0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent); }
+.pit.target::after, .store.target::after{ content:""; position:absolute; inset:18%; border-radius:inherit; border:2px dashed color-mix(in srgb, var(--accent) 80%, transparent); pointer-events:none; }
+
+.count{
+  position:absolute; left:50%; transform:translateX(-50%); z-index:3;
+  min-width:1.9em; text-align:center; padding:3px 7px; border-radius:999px;
+  background:var(--chip-bg); color:var(--chip-ink);
+  font-size:clamp(10px,1.5vw,13px); font-weight:600; line-height:1.1; font-variant-numeric:tabular-nums;
+  pointer-events:none;
+}
+.pit.bottom .count{ bottom:-0.9em; }
+.pit.top .count{ top:-0.9em; }
+.store .count{ top:10%; font-size:clamp(12px,2vw,17px); padding:4px 10px; }
+
+.seeds{ position:absolute; inset:0; pointer-events:none; z-index:2; }
+.seed{
+  --c: var(--seed-1);
+  position:absolute; left:0; top:0; width:var(--seed,12px); height:var(--seed,12px); border-radius:50%;
+  background:
+    radial-gradient(circle at 31% 26%, rgba(255,255,255,.98) 0 6%, rgba(255,255,255,.45) 12%, rgba(255,255,255,0) 26%),
+    radial-gradient(circle at 66% 80%, color-mix(in srgb, var(--c) 45%, #fff) 0 8%, rgba(255,255,255,0) 30%),
+    radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--c) 65%, #fff) 0%, var(--c) 42%, color-mix(in srgb, var(--c) 55%, #3B2B55) 100%);
+  box-shadow: inset 0 -1px 2px rgba(40,20,60,.25), 0 1px 2px rgba(0,0,0,.45);
+  will-change:transform;
+}
+.seed.flying{ box-shadow:0 10px 14px rgba(0,0,0,.35); }
+.seed.c1{ --c:var(--seed-1); } .seed.c2{ --c:var(--seed-2); } .seed.c3{ --c:var(--seed-3); }
+.seed.c4{ --c:var(--seed-4); } .seed.c5{ --c:var(--seed-5); }
+
+.status{ text-align:center; min-height:1.5em; margin:22px 0 0; font-size:clamp(16px,2.2vw,19px); font-weight:600; }
+.status .note{ color:var(--ink-soft); font-weight:400; }
+
+.result{
+  position:absolute; inset:0; z-index:5; display:grid; place-items:center;
+  background:color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  border-radius:clamp(22px,5vw,52px);
+}
+.result[hidden]{ display:none; }
+.result .card{ background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:24px 32px; text-align:center; box-shadow:0 20px 40px -20px rgba(0,0,0,.4); }
+.result h2{ margin:0 0 4px; font-size:clamp(24px,4vw,34px); font-weight:800; letter-spacing:-0.01em; }
+.result p{ margin:0 0 18px; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+
+details{ margin:36px auto 0; max-width:640px; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px 20px; }
+summary{ cursor:pointer; font-weight:600; }
+details ul{ margin:12px 0 0; padding-left:1.1rem; line-height:1.6; color:var(--ink-soft); }
+details li{ margin-bottom:6px; }
+details strong{ color:var(--ink); }
+
+@media (max-width:560px){
+  .seg button{ padding:7px 11px; font-size:13px; }
+  .btn{ padding:8px 13px; font-size:13px; }
+}
 </style>
 </head>
 <body>
-<main>
-<h1>Mancala</h1>
-<p class="sub">Think you can outsmart the bot? It definitely thinks you can't. Tap a pit on the bottom row and prove it wrong.</p>
-<div class="status"><div class="statusleft"><span class="turn" id="turn"></span><span id="msg" role="status" aria-live="polite"></span></div><div class="right"><span class="best" id="best"></span><button class="new" id="new">New game</button></div></div>
-<div class="board" id="board"></div>
-<details class="help"><summary>How to play</summary>
-<ul>
-<li><strong>Your turf:</strong> The bottom row is yours. Tap a pit and its seeds get dropped one by one, moving right, into your store and then onto the bot's side.</li>
-<li><strong>Hands off the bot's store:</strong> Your seeds skip it. Rude, but those are the rules.</li>
-<li><strong>Free turn:</strong> If your last seed lands in your own store, you go again. The bot hates this.</li>
-<li><strong>Steal mode:</strong> If your last seed lands in an empty pit on your side, you grab everything in the pit across from it, plus your own seed. Villain arc unlocked.</li>
-<li><strong>Game over:</strong> When one side runs dry, the leftover seeds go to whoever owns that side. Most seeds wins, and the bot will not be gracious about it.</li>
-<li><strong>Bragging rights:</strong> Your best score is saved, so beat your own record.</li>
-</ul></details>
-</main>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Mancala</h1>
+      <p class="sub">Think you can outsmart the bot? It definitely thinks you can't. Tap a pit on the bottom row and prove it wrong.</p>
+    </div>
+    <div class="controls">
+      <span class="best" id="best"></span>
+      <div class="seg" role="group" aria-label="Game mode">
+        <button type="button" data-mode="cpu" aria-pressed="true">Vs computer</button>
+        <button type="button" data-mode="pvp" aria-pressed="false">Two players</button>
+      </div>
+      <button type="button" class="btn" id="sound" aria-pressed="true">Sound on</button>
+      <button type="button" class="btn primary" id="new">New game</button>
+    </div>
+  </header>
+
+  <div class="side top" id="side1"><span class="who" id="name1">Computer</span><span class="score" id="score1">0</span></div>
+  <div class="stage">
+    <div class="board" id="board">
+      <div class="seeds" id="seeds"></div>
+    </div>
+    <div class="result" id="result" hidden>
+      <div class="card">
+        <h2 id="resultTitle"></h2>
+        <p id="resultScore"></p>
+        <button type="button" class="btn primary" id="again">Play again</button>
+      </div>
+    </div>
+  </div>
+  <div class="side bottom" id="side0"><span class="who" id="name0">You</span><span class="score" id="score0">0</span></div>
+
+  <p class="status" id="status" aria-live="polite"></p>
+
+  <details>
+    <summary>How to play</summary>
+    <ul>
+      <li><strong>Your turf:</strong> The bottom row is yours. Tap a pit and its seeds get dropped one by one, moving right, into your store and then onto the bot's side.</li>
+      <li><strong>Hands off the bot's store:</strong> Your seeds skip it. Rude, but those are the rules.</li>
+      <li><strong>Free turn:</strong> If your last seed lands in your own store, you go again. The bot hates this.</li>
+      <li><strong>Steal mode:</strong> If your last seed lands in an empty pit on your side, you grab everything in the pit across from it, plus your own seed. Villain arc unlocked.</li>
+      <li><strong>Game over:</strong> When one side runs dry, the leftover seeds go to whoever owns that side. Most seeds wins, and the bot will not be gracious about it.</li>
+      <li><strong>Bragging rights:</strong> Your best score is saved, so beat your own record.</li>
+    </ul>
+  </details>
+</div>
+
 <script>
-// Board: 0-5 your pits, 6 your store, 7-12 computer pits, 13 computer store.
-const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
-const sleep=ms=>new Promise(r=>setTimeout(r,reduce?Math.min(ms,60):ms));
-let s,busy,over,turn=0; // turn: 0 = you, 1 = computer, -1 = game over
-const boardEl=document.getElementById("board"),msgEl=document.getElementById("msg"),turnEl=document.getElementById("turn");
-const els=[],cells=[],counts=[];
-// Best score is saved in this browser only (localStorage)
-const bestEl=document.getElementById("best");
-let best=0;
-try{best=+localStorage.getItem("mancalaBest")||0;}catch(e){}
-const showBest=()=>{bestEl.textContent=best?`Best: ${best}`:"Best: none yet";};
+(() => {
+  const N = 14, COLORS = 5;
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const boardEl = document.getElementById('board');
+  const layer = document.getElementById('seeds');
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
 
-function build(){
-  boardEl.innerHTML="";
-  for(let i=0;i<14;i++){
-    if(i===6||i===13){
-      const st=document.createElement("div");
-      st.className="store"+(i===13?" cpu":"");
-      st.style.gridColumn=i===13?1:8;st.style.gridRow="1 / 3";
-      els[i]=st;boardEl.appendChild(st);continue;
+  // ---------- build board ----------
+  const pitEls = [];
+  for (let i = 0; i < N; i++) {
+    const isStore = i === 6 || i === 13;
+    const el = document.createElement(isStore ? 'div' : 'button');
+    el.className = isStore ? 'store' : 'pit';
+    if (isStore) { el.style.gridRow = '1 / 3'; el.style.gridColumn = i === 6 ? '8' : '1'; }
+    else if (i < 6) { el.style.gridRow = '2'; el.style.gridColumn = String(i + 2); el.classList.add('bottom'); }
+    else { el.style.gridRow = '1'; el.style.gridColumn = String(2 + 12 - i); el.classList.add('top'); }
+    const c = document.createElement('span'); c.className = 'count'; el.appendChild(c);
+    if (!isStore) {
+      el.type = 'button';
+      el.addEventListener('click', () => onPit(i));
+      el.addEventListener('pointerenter', () => preview(i));
+      el.addEventListener('pointerleave', clearPreview);
+      el.addEventListener('focus', () => preview(i));
+      el.addEventListener('blur', clearPreview);
     }
-    const mine=i<6;
-    const cell=document.createElement("div");
-    cell.className="cell "+(mine?"bot":"top");
-    cell.style.gridColumn=mine?i+2:14-i;cell.style.gridRow=mine?2:1;
-    const pit=document.createElement("button");pit.className="pit";
-    if(mine)pit.addEventListener("click",()=>humanMove(i));else pit.disabled=true;
-    const n=document.createElement("span");n.className="n";
-    // your number goes below the pit, the computer's goes above it
-    if(mine)cell.append(pit,n);else cell.append(n,pit);
-    els[i]=pit;cells[i]=cell;counts[i]=n;boardEl.appendChild(cell);
+    boardEl.insertBefore(el, layer);
+    pitEls[i] = el;
   }
-}
-function render(flash){
-  for(let i=0;i<14;i++){
-    const e=els[i],n=s[i],isStore=i===6||i===13;
-    let beads="";
-    for(let k=0;k<Math.min(n,isStore?30:20);k++)beads+='<span class="bead"></span>';
-    if(isStore){
-      e.innerHTML=`<span class="who">${i===6?"You":"Computer"}</span><div class="beads">${beads}</div><span class="n">${n}</span>`;
-    }else{
-      e.innerHTML=`<div class="beads">${beads}</div>`;
-      counts[i].textContent=n;
-      e.setAttribute("aria-label",`${i<6?"Your":"Computer"} pit with ${n} seeds`);
-      const can=i<6&&!busy&&!over&&n>0;
-      e.classList.toggle("can",can);e.disabled=!can;
+
+  // ---------- geometry ----------
+  let geo = [], S = 12;
+  function measure() {
+    const br = boardEl.getBoundingClientRect();
+    const pw = pitEls[0].getBoundingClientRect().width;
+    S = Math.max(7, pw * 0.25);
+    boardEl.style.setProperty('--seed', S + 'px');
+    geo = pitEls.map((el, i) => {
+      const r = el.getBoundingClientRect();
+      const store = i === 6 || i === 13;
+      return {
+        cx: r.left - br.left + r.width / 2,
+        cy: r.top - br.top + r.height / 2,
+        rx: Math.max(2, (r.width / 2 - S * 0.8) * (store ? 0.85 : 0.9)),
+        ry: Math.max(2, (r.height / 2 - S * 0.8) * (store ? 0.8 : 0.9)),
+      };
+    });
+  }
+  const rnd = () => { const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()); return [Math.cos(a) * r, Math.sin(a) * r]; };
+  const posOf = s => { const g = geo[s.pit]; return { x: g.cx + s.ox * g.rx, y: g.cy + s.oy * g.ry }; };
+  const T = (x, y, k = 1) => `translate(${x - S / 2}px, ${y - S / 2}px) scale(${k})`;
+  const place = s => { const p = posOf(s); s.el.style.transform = T(p.x, p.y); };
+  const layoutAll = () => { measure(); pits.flat().forEach(place); };
+  new ResizeObserver(() => { if (pits.length) layoutAll(); }).observe(boardEl);
+
+  // ---------- sound ----------
+  let ac = null, soundOn = true;
+  function plink() {
+    if (!soundOn) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(650 + Math.random() * 450, t);
+      o.frequency.exponentialRampToValueAtTime(240, t + 0.08);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.16, t + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+      o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.12);
+    } catch (e) {}
+  }
+
+  // ---------- state ----------
+  let pits = [], shown = [], player = 0, mode = 'cpu', busy = false, over = false, gid = 0, zTop = 1, note = '';
+  const own = (p, i) => p === 0 ? i >= 0 && i <= 5 : i >= 7 && i <= 12;
+  const storeOf = p => p === 0 ? 6 : 13;
+  const names = () => mode === 'cpu' ? ['You', 'Computer'] : ['Player 1', 'Player 2'];
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const who = p => mode === 'cpu' ? (p ? 'Computer' : 'You') : names()[p];
+  let best = 0;
+  try { best = +localStorage.getItem('mancalaBest') || 0; } catch (e) {}
+  const bestEl = document.getElementById('best');
+  const showBest = () => { bestEl.textContent = best ? `Best: ${best}` : 'Best: none yet'; };
+  const saveBest = () => { try { localStorage.setItem('mancalaBest', String(best)); } catch (e) {} showBest(); };
+  const sideCount = p => { let n = 0; for (let i = 0; i < N; i++) if (own(p, i)) n += pits[i].length; return n; };
+
+  function makeSeed(pit) {
+    const el = document.createElement('div');
+    el.className = 'seed c' + (1 + Math.floor(Math.random() * COLORS));
+    layer.appendChild(el);
+    const [ox, oy] = rnd();
+    return { el, pit, ox, oy };
+  }
+
+  function setCount(i, v, pop) {
+    const c = pitEls[i].querySelector('.count');
+    if (c.textContent !== String(v)) {
+      c.textContent = v;
+      if (pop && !RM) c.animate([{ transform: 'translateX(-50%) scale(1.35)' }, { transform: 'translateX(-50%) scale(1)' }], { duration: 220, easing: 'ease-out' });
     }
-    // highlight whoever's turn it is
-    (cells[i]||e).classList.toggle("active",i<7?turn===0:turn===1);
-    e.classList.remove("flash");
-    if(i===flash){void e.offsetWidth;e.classList.add("flash");}
+    if (i === 6) document.getElementById('score0').textContent = v;
+    if (i === 13) document.getElementById('score1').textContent = v;
+    const nm = names();
+    pitEls[i].setAttribute('aria-label',
+      i === 6 || i === 13 ? `${nm[i === 6 ? 0 : 1]} store, ${v} seeds` : `${nm[i < 6 ? 0 : 1]} pit ${i < 6 ? i + 1 : i - 6}, ${v} seeds`);
   }
-  turnEl.textContent=turn===0?"Your turn":turn===1?"Computer's turn":"Game over";
-  turnEl.dataset.who=turn;
-}
-const say=t=>msgEl.textContent=t;
 
-// Sowing and capture rules (same as the C version, with one 14-slot array)
-function sow(st,p,pit){
-  let cur=p*7+pit,n=st[cur];st[cur]=0;
-  const skip=p?6:13;
-  while(n>0){cur=(cur+1)%14;if(cur===skip)continue;st[cur]++;n--;}
-  return cur;
-}
-function finish(st,p,last){
-  const store=p*7+6;let cap=0;
-  if(last>=p*7&&last<p*7+6&&st[last]===1&&st[12-last]>0){
-    cap=st[12-last]+1;st[store]+=cap;st[last]=0;st[12-last]=0;
-  }
-  return {extra:last===store,cap};
-}
-const side=(st,p)=>st.slice(p*7,p*7+6).reduce((a,b)=>a+b,0);
-
-// Computer strategy: greedy store gain, plus the best follow-up on an extra turn,
-// and avoid ending the game while behind.
-function chooseMove(){
-  let best=-1,bestGain=-Infinity;
-  for(let pit=0;pit<6;pit++){
-    if(s[7+pit]===0)continue;
-    const t=s.slice(),before=t[13];
-    const r=finish(t,1,sow(t,1,pit));
-    let gain=t[13]-before;
-    if(side(t,0)===0&&t[13]<s[6])gain-=100;
-    if(r.extra){
-      let second=0;
-      for(let j=0;j<6;j++){
-        if(t[7+j]===0)continue;
-        const u=t.slice(),b=u[13];
-        finish(u,1,sow(u,1,j));
-        second=Math.max(second,u[13]-b);
+  // ---------- the seed hop ----------
+  function hop(s, to, dur) {
+    const g = gid, from = s.pit, a = posOf(s);
+    s.pit = to; [s.ox, s.oy] = rnd();
+    const b = posOf(s);
+    shown[from]--; setCount(from, shown[from], false);
+    s.el.style.zIndex = ++zTop;
+    s.el.classList.add('flying');
+    const d = Math.hypot(b.x - a.x, b.y - a.y);
+    const lift = RM ? 0 : Math.min(120, 20 + d * 0.42);
+    const frames = [];
+    for (let k = 0; k <= 20; k++) {
+      const u = k / 20;
+      const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+      const arc = 4 * e * (1 - e);
+      frames.push({ transform: T(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e - lift * arc, 1 + (RM ? 0 : 0.45) * arc) });
+    }
+    s.el.style.transform = T(b.x, b.y);
+    return s.el.animate(frames, { duration: RM ? 70 : dur, easing: 'linear' }).finished.catch(() => {}).then(() => {
+      if (g !== gid) return;
+      s.el.classList.remove('flying');
+      place(s);
+      if (!RM) {
+        const p = posOf(s);
+        s.el.animate([{ transform: T(p.x, p.y, 0.8) }, { transform: T(p.x, p.y, 1.1) }, { transform: T(p.x, p.y, 1) }], { duration: 200, easing: 'ease-out' });
       }
-      gain+=second;
-    }
-    if(gain>bestGain){bestGain=gain;best=pit;}
+      shown[to]++; setCount(to, shown[to], true);
+      plink();
+    });
   }
-  return best;
-}
 
-async function play(p,pit){
-  busy=true;turn=p;
-  const start=p*7+pit,skip=p?6:13;
-  let n=s[start],cur=start;s[start]=0;render();
-  while(n>0){
-    cur=(cur+1)%14;if(cur===skip)continue;
-    s[cur]++;n--;render(cur);await sleep(240);
+  // ---------- game flow ----------
+  function newGame() {
+    gid++; layer.innerHTML = ''; resultEl.hidden = true; clearPreview(); note = '';
+    pits = Array.from({ length: N }, () => []);
+    for (let i = 0; i < N; i++) if (i !== 6 && i !== 13) for (let k = 0; k < 5; k++) pits[i].push(makeSeed(i));
+    shown = pits.map(a => a.length);
+    player = 0; busy = false; over = false;
+    const nm = names();
+    document.getElementById('name0').textContent = nm[0];
+    document.getElementById('name1').textContent = nm[1];
+    layoutAll();
+    for (let i = 0; i < N; i++) setCount(i, shown[i], false);
+    if (!RM) pits.flat().forEach(s => {
+      const p = posOf(s);
+      s.el.animate([{ transform: T(p.x, p.y - 50, 0.3), opacity: 0 }, { transform: T(p.x, p.y, 1), opacity: 1 }],
+        { duration: 450, delay: Math.random() * 450, easing: 'cubic-bezier(.3,1.5,.5,1)', fill: 'backwards' });
+    });
+    update();
   }
-  const r=finish(s,p,cur);
-  if(r.cap){render(p*7+6);say(`${p?"Computer":"You"} captured ${r.cap} seeds!`);await sleep(700);}
-  if(side(s,0)===0||side(s,1)===0){return endGame();}
-  if(r.extra){
-    if(p){say("Computer goes again.");render();await sleep(700);return play(1,chooseMove());}
-    busy=false;say("Your last seed landed in your store. Go again!");render();return;
+
+  function landing(i) {
+    let n = pits[i].length, cur = i; const os = storeOf(1 - player);
+    while (n > 0) { cur = (cur + 1) % N; if (cur !== os) n--; }
+    return cur;
   }
-  if(p===0){turn=1;say("Computer is thinking...");render();await sleep(600);return play(1,chooseMove());}
-  turn=0;busy=false;say("Your move.");render();
-}
-function humanMove(pit){if(!busy&&!over&&s[pit]>0)play(0,pit);}
-function endGame(){
-  for(const p of [0,1]){s[p*7+6]+=side(s,p);for(let i=0;i<6;i++)s[p*7+i]=0;}
-  over=true;busy=false;turn=-1;render();
-  const a=s[6],b=s[13],prev=best;
-  if(a>prev){best=a;try{localStorage.setItem("mancalaBest",best);}catch(e){}showBest();}
-  const note=a>prev&&prev>0?" New best score!":"";
-  say((a>b?`You win, ${a} to ${b}!`:a<b?`Computer wins, ${b} to ${a}.`:`It's a tie at ${a}.`)+note);
-}
-function newGame(){s=[5,5,5,5,5,5,0,5,5,5,5,5,5,0];busy=false;over=false;turn=0;render();say("Your move.");}
-document.getElementById("new").addEventListener("click",newGame);
-showBest();build();newGame();
+  function preview(i) {
+    clearPreview();
+    if (pitEls[i].disabled) return;
+    pitEls[landing(i)].classList.add('target');
+  }
+  function clearPreview() { pitEls.forEach(el => el.classList.remove('target')); }
+
+  function onPit(i) {
+    if (busy || over || !own(player, i) || !pits[i].length) return;
+    if (mode === 'cpu' && player === 1) return;
+    sow(i);
+  }
+
+  async function sow(i) {
+    const g = gid, p = player, os = storeOf(1 - p), st = storeOf(p);
+    busy = true; note = ''; clearPreview(); update();
+    const hand = pits[i].splice(0);
+    if (!RM) pitEls[i].animate([{ transform: 'scale(1)' }, { transform: 'scale(0.94)' }, { transform: 'scale(1)' }], { duration: 220 });
+    const dur = Math.max(180, 340 - hand.length * 12);
+    let cur = i;
+    for (const s of hand) {
+      do { cur = (cur + 1) % N; } while (cur === os);
+      pits[cur].push(s);
+      await hop(s, cur, dur);
+      if (g !== gid) return;
+      await wait(RM ? 0 : 30);
+    }
+    let extra = false;
+    if (cur === st) {
+      extra = true;
+    } else if (own(p, cur) && pits[cur].length === 1 && pits[12 - cur].length > 0) {
+      const o = 12 - cur;
+      const taken = [...pits[o].splice(0), ...pits[cur].splice(0)];
+      note = `${who(p)} captured ${taken.length} seeds!`;
+      taken.forEach(s => pits[st].push(s));
+      await Promise.all(taken.map((s, k) => wait(k * 70).then(() => g === gid && hop(s, st, dur + 140))));
+      if (g !== gid) return;
+    }
+    if (sideCount(0) === 0 || sideCount(1) === 0) {
+      await sweep(g, dur);
+      if (g !== gid) return;
+      return finish();
+    }
+    if (extra) note = mode === 'cpu' ? (p === 0 ? 'Your last seed landed in your store. Go again!' : 'Computer goes again.') : `${names()[p]} goes again!`;
+    else player = 1 - p;
+    busy = false;
+    update();
+  }
+
+  async function sweep(g, dur) {
+    const jobs = []; let k = 0;
+    for (let i = 0; i < N; i++) {
+      if (i === 6 || i === 13) continue;
+      const st = storeOf(i < 6 ? 0 : 1);
+      for (const s of pits[i].splice(0)) {
+        pits[st].push(s);
+        const delay = k++ * 60;
+        jobs.push(wait(delay).then(() => g === gid && hop(s, st, dur + 120)));
+      }
+    }
+    await Promise.all(jobs);
+  }
+
+  function finish() {
+    over = true; busy = false;
+    const a = pits[6].length, b = pits[13].length, nm = names();
+    const title = a === b ? "It's a tie" : mode === 'cpu' ? (a > b ? 'You win!' : 'Computer wins') : `${a > b ? nm[0] : nm[1]} wins!`;
+    let score = a === b ? `Dead even at ${a}.` : `${Math.max(a, b)} to ${Math.min(a, b)}.`;
+    if (mode === 'cpu' && a > best) { const prev = best; best = a; saveBest(); if (prev > 0) score += ' New best score!'; }
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultScore').textContent = score;
+    resultEl.hidden = false;
+    note = '';
+    update();
+    document.getElementById('again').focus();
+  }
+
+  function update() {
+    for (let i = 0; i < N; i++) {
+      if (i === 6 || i === 13) continue;
+      pitEls[i].disabled = busy || over || !own(player, i) || !pits[i].length || (mode === 'cpu' && player === 1);
+    }
+    document.getElementById('side0').classList.toggle('active', !over && player === 0);
+    document.getElementById('side1').classList.toggle('active', !over && player === 1);
+    let turn = '';
+    if (over) turn = 'Game over.';
+    else if (busy) turn = '';
+    else if (mode === 'cpu') turn = player === 0 ? (note.includes('Go again') ? '' : 'Your move.') : 'Computer is thinking...';
+    else turn = `${names()[player]}'s turn.`;
+    statusEl.innerHTML = '';
+    if (note) { const n = document.createElement('span'); n.className = 'note'; n.textContent = note + ' '; statusEl.appendChild(n); }
+    statusEl.appendChild(document.createTextNode(turn || '\u00a0'));
+    if (!busy && !over && mode === 'cpu' && player === 1) {
+      const g = gid;
+      setTimeout(() => { if (g === gid && !busy && !over) sow(bestMove()); }, 700);
+    }
+  }
+
+  // ---------- computer opponent (minimax) ----------
+  function sim(c, p, i) {
+    c = c.slice(); let n = c[i]; c[i] = 0; let cur = i;
+    const os = p ? 6 : 13, st = p ? 13 : 6;
+    while (n) { cur = (cur + 1) % N; if (cur === os) continue; c[cur]++; n--; }
+    const extra = cur === st;
+    if (!extra && own(p, cur) && c[cur] === 1 && c[12 - cur] > 0) { c[st] += c[12 - cur] + 1; c[cur] = 0; c[12 - cur] = 0; }
+    let s0 = 0, s1 = 0; for (let k = 0; k < 6; k++) s0 += c[k]; for (let k = 7; k < 13; k++) s1 += c[k];
+    let end = false;
+    if (!s0 || !s1) { c[6] += s0; c[13] += s1; for (let k = 0; k < N; k++) if (k !== 6 && k !== 13) c[k] = 0; end = true; }
+    return { c, extra, end };
+  }
+  const legal = (c, p) => { const m = []; for (let i = p ? 7 : 0; i < (p ? 13 : 6); i++) if (c[i]) m.push(i); return m; };
+  function mm(c, p, d, al, be) {
+    const moves = legal(c, p);
+    if (!d || !moves.length) return c[13] - c[6];
+    let v = p ? -1e9 : 1e9;
+    for (const m of moves) {
+      const r = sim(c, p, m);
+      const diff = r.c[13] - r.c[6];
+      const x = r.end ? diff + Math.sign(diff) * 100 : mm(r.c, r.extra ? p : 1 - p, d - 1, al, be);
+      if (p) { if (x > v) v = x; if (v > al) al = v; } else { if (x < v) v = x; if (v < be) be = v; }
+      if (al >= be) break;
+    }
+    return v;
+  }
+  function bestMove() {
+    const c = pits.map(a => a.length);
+    let best = [], bv = -1e9;
+    for (const m of legal(c, 1)) {
+      const r = sim(c, 1, m);
+      const diff = r.c[13] - r.c[6];
+      const v = r.end ? diff + Math.sign(diff) * 100 : mm(r.c, r.extra ? 1 : 0, 6, -1e9, 1e9);
+      if (v > bv) { bv = v; best = [m]; } else if (v === bv) best.push(m);
+    }
+    return best[Math.floor(Math.random() * best.length)];
+  }
+
+  // ---------- controls ----------
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    newGame();
+  }));
+  document.getElementById('new').addEventListener('click', newGame);
+  document.getElementById('again').addEventListener('click', newGame);
+  const soundBtn = document.getElementById('sound');
+  soundBtn.addEventListener('click', () => {
+    soundOn = !soundOn;
+    soundBtn.setAttribute('aria-pressed', String(soundOn));
+    soundBtn.textContent = soundOn ? 'Sound on' : 'Sound off';
+  });
+
+  showBest();
+  newGame();
+})();
 </script>
 </body>
 </html>
